@@ -26,198 +26,17 @@ IN=$(uname -a)
 arrIN=(${IN// / })
 IN2=${arrIN[3]}
 arrIN2=(${IN2//-/ })
-OS=${arrIN2[1]}
+# OS=${arrIN2[1]}
+OS="Ubuntu"
 #########################################################################################
-
-
-
-#########################################################################################
-# Parse options
-#########################################################################################
-while [ -n "$1" ]; do # while loop starts
-	case "$1" in
-                -name)
-                        DEPLOYED_NAME="$2"
-                        shift
-                        ;;
-
-                -host)
-                        HOST="$2"
-                        shift
-                        ;;
-
-                -dashboard-uri)
-                        APP_MOUNT_URI="$2"
-                        shift
-                        ;;
-
-                -static-url)
-                        STATIC_URL="$2"
-                        shift
-                        ;;
-
-                -media-url)
-                        MEDIA_URL="$2"
-                        shift
-                        ;;
-
-                -admin-email)
-                        ADMIN_EMAIL="$2"
-                        shift
-                        ;;
-
-                -admin-pw)
-                        ADMIN_PASS="$2"
-                        shift
-                        ;;
-
-                -dbhost)
-                        PGDBHOST="$2"
-                        shift
-                        ;;
-
-                -dbport)
-                        DBPORT="$2"
-                        shift
-                        ;;
-
-                -graphql-port)
-                        GQL_PORT="$2"
-                        shift
-                        ;;
-
-                -graphql-uri)
-                        APIURI="$2"
-                        shift
-                        ;;
-
-                -email)
-                        EMAIL="$2"
-                        shift
-                        ;;
-
-                -email-pw)
-                        EMAIL_PW="$2"
-                        shift
-                        ;;
-
-                -email-host)
-                        EMAIL_HOST="$2"
-                        shift
-                        ;;
-
-                -repo)
-                        REPO="$2"
-                        shift
-                        ;;
-
-                -v)
-                        vOPT="true"
-                        VERSION="$2"
-                        shift
-                        ;;
-
-                *)
-                        echo "Option $1 is invalid."
-                        echo "Exiting"
-                        exit 1
-                        ;;
-	esac
-	shift
-done
-#########################################################################################
-
-
-
-#########################################################################################
-# Echo the detected operating system
-#########################################################################################
-echo ""
-echo "$OS detected"
-echo ""
-sleep 3
-#########################################################################################
-
-
-
-#########################################################################################
-# Select/run Operating System specific commands
-#########################################################################################
-# Tested working on Ubuntu Server 20.04
-# Needs testing on the distributions listed below:
-#       Debian
-#       Fedora CoreOS
-#       Kubernetes
-#       SUSE CaaS
-echo "Installing core dependencies..."
-sleep 1
-case "$OS" in
-        Debian)
-                sudo apt-get update
-                sudo apt-get install -y build-essential python3-dev python3-pip python3-cffi python3-venv gcc
-                sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-                sudo apt-get install -y nodejs npm postgresql postgresql-contrib
-                ;;
-
-        Fedora)
-                ;;
-
-        Kubernetes)
-                ;;
-
-        SUSE)
-                ;;
-
-        Ubuntu)
-                sudo apt-get update
-                sudo apt-get install -y build-essential python3-dev python3-pip python3-cffi python3-venv gcc
-                sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-                sudo apt-get install -y nodejs npm postgresql postgresql-contrib
-                ;;
-
-        *)
-                # Unsupported distribution detected, exit
-                echo "Unsupported Linix distribution detected."
-                echo "Exiting"
-                exit 1
-                ;;
-esac
-#########################################################################################
-
-
-
-#########################################################################################
-# Tell the user what's happening
-#########################################################################################
-echo ""
-echo "Finished installing core dependencies"
-echo ""
-sleep 2
-echo "Setting up security feature details..."
-echo ""
-sleep 2
-#########################################################################################
-
-
 
 #########################################################################################
 # Generate a secret key file
 #########################################################################################
-# Does the key file directory exiet?
-if [ ! -d "/etc/saleor" ]; then
-        sudo mkdir /etc/saleor
-else
-        # Does the key file exist?
-        if [ -f "/etc/saleor/api_sk" ]; then
-                # Yes, remove it.
-                sudo rm /etc/saleor/api_sk
-        fi
-fi
 # Create randomized 2049 byte key file
-sudo echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1) > /etc/saleor/api_sk
+SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1)
+export RSA_PRIVATE_KEY=$(cat my-private-key.pem)
 #########################################################################################
-
-
 
 #########################################################################################
 # Set variables for the password, obfuscation string, and user/database names
@@ -231,6 +50,7 @@ PGSQLUSER="saleor_dbu_$OBFSTR"
 # Generate a 128 byte password for the Saleor database user
 # TODO: Add special characters once we know which ones won't crash the python script
 PGSQLUSERPASS=$(cat /dev/urandom | tr -dc 'A-Za-z0-9' | fold -w 128 | head -n 1)
+PGSQLUSER_READ="saleor_$OBFSTR"
 #########################################################################################
 
 
@@ -256,6 +76,11 @@ sudo -i -u postgres psql -c "CREATE ROLE $PGSQLUSER PASSWORD '$PGSQLUSERPASS' SU
 # Create the database for Saleor
 sudo -i -u postgres psql -c "CREATE DATABASE $PGSQLDBNAME;"
 # TODO - Secure the postgers user account
+sudo -i -u postgres psql -c "CREATE USER $PGSQLUSER_READ WITH PASSWORD '$PGSQLUSERPASS';"
+sudo -i -u postgres psql -c "GRANT CONNECT ON DATABASE $PGSQLDBNAME TO $PGSQLUSER_READ;"
+sudo -i -u postgres psql -c "GRANT USAGE ON SCHEMA public TO $PGSQLUSER_READ;"
+sudo -i -u postgres psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO $PGSQLUSER_READ;"
+sudo -i -u postgres psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO $PGSQLUSER_READ;"
 #########################################################################################
 
 
@@ -276,45 +101,48 @@ sleep 2
 echo "Please provide details for your Saleor API instillation..."
 echo ""
 # Get the API host domain
-while [ "$HOST" = "" ]
-do
-        echo -n "Enter the API host domain:"
-        read HOST
-done
+HOST="localhost"
+ADMIN_EMAIL="admin@dmt.com"
+ADMIN_PASS="vmtriet"
+# while [ "$HOST" = "" ]
+# do
+#         echo -n "Enter the API host domain:"
+#         read HOST
+# done
 # Get an optional custom Static URL
-if [ "$STATIC_URL" = "" ]; then
-        echo -n "Enter a custom Static Files URI (optional):"
-        read STATIC_URL
-        if [ "$STATIC_URL" != "" ]; then
-                STATIC_URL="/$STATIC_URL/"
-        fi
-else
-        STATIC_URL="/$STATIC_URL/"
-fi
+# if [ "$STATIC_URL" = "" ]; then
+        # echo -n "Enter a custom Static Files URI (optional):"
+        # read STATIC_URL
+        # if [ "$STATIC_URL" != "" ]; then
+                # STATIC_URL="/$STATIC_URL/"
+        # fi
+# else
+#         STATIC_URL="/$STATIC_URL/"
+# fi
 # Get an optional custom media URL
-if [ "$MEDIA_URL" = "" ]; then
-        echo -n "Enter a custom Media Files URI (optional):"
-        read MEDIA_URL
-        if [ "$MEDIA_URL" != "" ]; then
-                MEDIA_URL="/$MEDIA_URL/"
-        fi
-else
-        MEDIA_URL="/$MEDIA_URL/"
-fi
+# if [ "$MEDIA_URL" = "" ]; then
+        # echo -n "Enter a custom Media Files URI (optional):"
+        # read MEDIA_URL
+        # if [ "$MEDIA_URL" != "" ]; then
+                # MEDIA_URL="/$MEDIA_URL/"
+        # fi
+# else
+#         MEDIA_URL="/$MEDIA_URL/"
+# fi
 # Get the Admin's email address
-while [ "$ADMIN_EMAIL" = "" ]
-do
-        echo ""
-        echo -n "Enter the Dashboard admin's email:"
-        read ADMIN_EMAIL
-done
-# Get the Admin's desired password
-while [ "$ADMIN_PASS" = "" ]
-do
-        echo ""
-        echo -n "Enter the Dashboard admin's desired password:"
-        read -s ADMIN_PASS
-done
+# while [ "$ADMIN_EMAIL" = "" ]
+# do
+#         echo ""
+#         echo -n "Enter the Dashboard admin's email:"
+#         read ADMIN_EMAIL
+# done
+# # Get the Admin's desired password
+# while [ "$ADMIN_PASS" = "" ]
+# do
+#         echo ""
+#         echo -n "Enter the Dashboard admin's desired password:"
+#         read -s ADMIN_PASS
+# done
 #########################################################################################
 
 
@@ -344,10 +172,10 @@ fi
 #
 if [ "$vOPT" = "true" ]; then
         if [ "$VERSION" = "" ]; then
-                VERSION="2.11.1"
+                VERSION="3.13.12"
         fi
 else
-        VERSION="2.11.1"
+        VERSION="3.13.12"
 fi
 #
 if [ "$STATIC_URL" = "" ]; then
@@ -405,19 +233,19 @@ echo ""
 # Check if the -v (version) option was used
 if [ "$vOPT" = "true" ]; then
         # Get the Mirumee repo
-        sudo -u $UN git clone https://github.com/mirumee/saleor.git
+        sudo -u $UN git clone https://github.com/saleor/saleor.git
 else
         # Was a repo specified?
-        if [ "$REPO" = "mirumee" ]; then
+        if [ "$REPO" = "saleor" ]; then
                 # Get the Mirumee repo
-                sudo -u $UN git clone https://github.com/mirumee/saleor.git
+                sudo -u $UN git clone https://github.com/saleor/saleor.git
         else
                 # Get the Mirumee repo
-                sudo -u $UN git clone https://github.com/mirumee/saleor.git
+                sudo -u $UN git clone https://github.com/saleor/saleor.git
 
                 ###### For possible later use ######
                 # Get the forked repo from thewhiterabbit
-                #git clone https://github.com/mirumee/saleor.git
+                #git clone https://github.com/saleor/saleor.git
                 ###### For possible later use ######
         fi
 fi
@@ -463,12 +291,12 @@ sleep 2
 if [ -f "$HD/saleor/saleor/settings.py" ]; then
         sudo rm $HD/saleor/saleor/settings.py
 fi
-sudo cp $HD/Deploy_Saleor/resources/saleor/$VERSION-settings.py $HD/saleor/saleor/settings.py
-# Replace the populatedb.py file with the production version
-if [ -f "$HD/saleor/saleor/core/management/commands/populatedb.py" ]; then
-        sudo rm $HD/saleor/saleor/core/management/commands/populatedb.py
-fi
-sudo cp $HD/Deploy_Saleor/resources/saleor/$VERSION-populatedb.py $HD/saleor/saleor/core/management/commands/populatedb.py
+sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
+# # Replace the populatedb.py file with the production version
+# if [ -f "$HD/saleor/saleor/core/management/commands/populatedb.py" ]; then
+#         sudo rm $HD/saleor/saleor/core/management/commands/populatedb.py
+# fi
+# sudo cp $HD/Deploy_Saleor/resources/saleor/populatedb.py $HD/saleor/saleor/core/management/commands/populatedb.py
 # Replace the test_core.py file with the production version
 #if [ -f "$HD/saleor/saleor/core/tests/test_core.py" ]; then
 #        sudo rm $HD/saleor/saleor/core/tests/test_core.py
@@ -482,21 +310,21 @@ if [ -f "/etc/systemd/system/saleor.service" ]; then
 fi
 ###### This following section is for future use and will be modified to allow an alternative repo clone ######
 # Was the -v (version) option used or Mirumee repo specified?
-if [ "vOPT" = "true" ] || [ "$REPO" = "mirumee" ]; then
+if [ "vOPT" = "true" ] || [ "$REPO" = "saleor" ]; then
         # Create the saleor service file
         sudo sed "s/{un}/$UN/
                   s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service > /etc/systemd/system/saleor.service
         wait
         # Does an old server block exist?
-        if [ -f "/etc/nginx/sites-available/saleor" ]; then
+        if [ -f "/etc/nginx/conf.d/saleor" ]; then
                 # Remove the old service file
-                sudo rm /etc/nginx/sites-available/saleor
+                sudo rm /etc/nginx/conf.d/saleor
         fi
         # Create the saleor server block
         sudo sed "s|{hd}|$HD|g
                   s/{host}/$HOST/g
                   s|{static}|$STATIC_URL|g
-                  s|{media}|$MEDIA_URL|g" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/sites-available/saleor
+                  s|{media}|$MEDIA_URL|g" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/conf.d/saleor
         wait
 else
         # Create the new service file
@@ -504,9 +332,9 @@ else
                   s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service > /etc/systemd/system/saleor.service
         wait
         # Does an old server block exist?
-        if [ -f "/etc/nginx/sites-available/saleor" ]; then
+        if [ -f "/etc/nginx/conf.d/saleor" ]; then
                 # Remove the old service file
-                sudo rm /etc/nginx/sites-available/saleor
+                sudo rm /etc/nginx/conf.d/saleor
         fi
         # Create the new server block
         sudo sed "s|{hd}|$HD|g
@@ -514,22 +342,22 @@ else
                   s/{host}/$HOST/g
                   s|{static}|$STATIC_URL|g
                   s|{media}|$MEDIA_URL|g
-                  s/{api_port}/$API_PORT/" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/sites-available/saleor
+                  s/{api_port}/$API_PORT/" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/conf.d/saleor
         wait
 fi
 # Create the production uwsgi initialization file
 sudo sed "s|{hd}|$HD|g
           s/{un}/$UN/" $HD/Deploy_Saleor/resources/saleor/template.uwsgi > $HD/saleor/saleor/wsgi/prod.ini
-if [ -d "/var/www/$HOST" ]; then
-        sudo rm -R /var/www/$HOST
+if [ -d "/usr/share/nginx/$HOST" ]; then
+        sudo rm -R /usr/share/nginx/$HOST
         wait
 fi
-# Create the host directory in /var/www/
-sudo mkdir /var/www/$HOST
+# Create the host directory in /usr/share/nginx/
+sudo mkdir /usr/share/nginx/$HOST
 wait
 # Create the media directory
-sudo mkdir /var/www/$HOST$MEDIA_URL
-# Static directory will be moved into /var/www/$HOST/ after collectstatic is performed
+sudo mkdir /usr/share/nginx/$HOST$MEDIA_URL
+# Static directory will be moved into /usr/share/nginx/$HOST/ after collectstatic is performed
 #########################################################################################
 
 
@@ -547,6 +375,7 @@ echo ""
 #########################################################################################
 # Build the database URL
 DB_URL="postgres://$PGSQLUSER:$PGSQLUSERPASS@$PGDBHOST:$DBPORT/$PGSQLDBNAME"
+DB_REPL="postgres://$PGSQLUSER_READ:$PGSQLUSERPASS@$PGDBHOST:$DBPORT/$PGSQLDBNAME"
 EMAIL_URL="smtp://$EMAIL:$EMAIL_PW@$EMAIL_HOST:/?ssl=True"
 API_HOST=$(hostname -i);
 # Build the chosts and ahosts lists
@@ -555,6 +384,7 @@ A_HOSTS="$HOST,$API_HOST,localhost,127.0.0.1"
 QL_ORIGINS="$HOST,$API_HOST,localhost,127.0.0.1"
 # Write the production .env file from template.env
 sudo sed "s|{dburl}|$DB_URL|
+          s|{repl}|$DB_REPL|
           s|{emailurl}|$EMAIL_URL|
           s/{chosts}/$C_HOSTS/
           s/{ahosts}/$A_HOSTS/
@@ -562,6 +392,7 @@ sudo sed "s|{dburl}|$DB_URL|
           s|{static}|$STATIC_URL|g
           s|{media}|$MEDIA_URL|g
           s/{adminemail}/$ADMIN_EMAIL/
+          s|{secret}|$SECRET_KEY|
           s/{gqlorigins}/$QL_ORIGINS/" $HD/Deploy_Saleor/resources/saleor/template.env > $HD/saleor/.env
 wait
 #########################################################################################
@@ -647,10 +478,11 @@ wait
 #sleep 5
 # Stop the uwsgi processes
 #uwsgi --stop $HD/saleortemp.pid
-# Move static files to /var/www/$HOST
-sudo mv $HD/saleor/static /var/www/${HOST}${STATIC_URL}
-sudo chown -R www-data:www-data /var/www/$HOST
-#sudo chmod -R 776 /var/www/$HOST
+# Move static files to /usr/share/nginx/$HOST
+echo HOST
+sudo mv $HD/saleor/static /usr/share/nginx/${HOST}${STATIC_URL}
+sudo chown -R www-data:www-data /usr/share/nginx/$HOST
+#sudo chmod -R 776 /usr/share/nginx/$HOST
 #########################################################################################
 
 
@@ -690,7 +522,7 @@ sudo systemctl start saleor.service
 echo "Creating undeploy.sh for undeployment scenario..."
 #########################################################################################
 if [ "$SAME_HOST" = "no" ]; then
-        sed "s|{rm_app_host}|sudo rm -R /var/www/$APP_HOST|g
+        sed "s|{rm_app_host}|sudo rm -R /usr/share/nginx/$APP_HOST|g
              s|{host}|$HOST|
              s|{gql_port}|$GQL_PORT|
              s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy > $HD/Deploy_Saleor/undeploy.sh

@@ -12,20 +12,20 @@ echo ""
 echo "Please provide details for your Saleor Dashboard installation..."
 echo ""
 # Get the Dashboard & GraphQL host domain
-while [ "$SAME_HOST" = "" ]
-do
-        echo -n "Are you hosting the Dashboard on the same host domain as the API (yes|no)?"
-        read SAME_HOST
-done
-# Get the API host IP or domain
-if [ "$SAME_HOST" = "no" ]; then
-        while [ "$APP_HOST" = "" ]
-        do
-                echo ""
-                echo -n "Enter the Dashboard host domain:"
-                read APP_HOST
-        done
-fi
+# while [ "$SAME_HOST" = "" ]
+# do
+#         echo -n "Are you hosting the Dashboard on the same host domain as the API (yes|no)?"
+#         read SAME_HOST
+# done
+# # Get the API host IP or domain
+# if [ "$SAME_HOST" = "no" ]; then
+#         while [ "$APP_HOST" = "" ]
+#         do
+#                 echo ""
+#                 echo -n "Enter the Dashboard host domain:"
+#                 read APP_HOST
+#         done
+# fi
 # Get the APP Mount (Dashboard) URI
 while [ "$APP_MOUNT_URI" = "" ]
 do
@@ -46,7 +46,7 @@ cd $HD
 if [ -d "$HD/saleor-dashboard" ]; then
         sudo rm -R $HD/saleor-dashboard
 fi
-sudo -u $UN git clone https://github.com/mirumee/saleor-dashboard.git
+sudo -u $UN git clone https://github.com/saleor/saleor-dashboard.git
 wait
 # Build the API URL
 API_URL="https://$HOST/$APIURI/"
@@ -93,7 +93,7 @@ echo "Moving static files for the Dashboard..."
 echo ""
 if [ "$SAME_HOST" = "no" ]; then
         # Move static files for the Dashboard
-        sudo mv $HD/saleor-dashboard/build/$APP_MOUNT_URI /var/www/$APP_HOST/
+        sudo mv $HD/saleor-dashboard/build/$APP_MOUNT_URI /usr/share/nginx/$APP_HOST/
         # Make an empry variable
         DASHBOARD_LOCATION=""
         # Clean the saleor server block
@@ -103,12 +103,12 @@ if [ "$SAME_HOST" = "no" ]; then
                   s/{app_mount_uri}/$APP_MOUNT_URI/g
                   s/{host}/$APP_HOST/g" $HD/Deploy_Saleor/resources/saleor-dashboard/server_block > /etc/nginx/sites-available/saleor-dashboard
         wait
-        sudo chown -R www-data /var/www/$APP_HOST
+        sudo chown -R www-data /usr/share/nginx/$APP_HOST
         echo "Enabling server block and Restarting nginx..."
         sudo ln -s /etc/nginx/sites-available/saleor-dashboard /etc/nginx/sites-enabled/
 else
         # Move static files for the Dashboard
-        sudo mv $HD/saleor-dashboard/build/$APP_MOUNT_URI /var/www/$HOST/
+        sudo mv $HD/saleor-dashboard/build/$APP_MOUNT_URI /usr/share/nginx/$HOST/
         # Populate the DASHBOARD_LOCATION variable
         DASHBOARD_LOCATION=$(<$HD/Deploy_Saleor/resources/saleor-dashboard/dashboard-location)
         # Modify the new server block
