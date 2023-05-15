@@ -14,11 +14,11 @@ server {
     
     # Django media and static files
     location {media}  {
-        alias /var/www/{host}{media};
+        alias /usr/share/nginx/{host}{media};
     }
     
     location {static} {
-        alias /var/www/{host}{static};
+        alias /usr/share/nginx/{host}{static};
     }
 
     # Send all non-media requests to the Django server.

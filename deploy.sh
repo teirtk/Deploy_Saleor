@@ -466,8 +466,8 @@ wait
 npm run build-schema
 wait
 # Build the emails
-npm run build-emails
-wait
+# npm run build-emails
+# wait
 # Exit the virtual environment here? _#_
 deactivate
 # Set ownership of the app directory to $UN:www-data

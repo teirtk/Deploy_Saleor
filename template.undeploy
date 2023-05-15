@@ -247,14 +247,14 @@ fi
 if [ -f "$HD/run/saleor.sock" ]; then
     sudo rm $HD/run/saleor.sock
 fi
-if [ -f "/etc/nginx/sites-enabled/saleor" ]; then
-    sudo rm /etc/nginx/sites-enabled/saleor
+if [ -f "/etc/nginx/conf.d/saleor" ]; then
+    sudo rm /etc/nginx/conf.d/saleor
 fi
 if [ -f "/etc/nginx/sites-available/saleor" ]; then
     sudo rm /etc/nginx/sites-available/saleor
 fi
-if [ -d "/var/www/{host}" ]; then
-    sudo rm -R /var/www/{host}
+if [ -d "/usr/share/nginx/{host}" ]; then
+    sudo rm -R /usr/share/nginx/{host}
     {rm_app_host}
 fi
 

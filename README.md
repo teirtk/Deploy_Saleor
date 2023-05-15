@@ -58,8 +58,8 @@ sudo certbot --nginx -d your.domain
 <li>Replace http with https in the following files:</li>
 
 ```
-/var/www/your.domain/dashboard/index.html
-/var/www/your.domain/dashboard/dashboard.randomstring.js
+/usr/share/nginx/your.domain/dashboard/index.html
+/usr/share/nginx/your.domain/dashboard/dashboard.randomstring.js
 ```
 </ol>
 Note: Substitute /dashboard/ with the URI you entered durring the setup script.
