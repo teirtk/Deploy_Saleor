@@ -107,7 +107,7 @@ if [ "$SAME_HOST" = "no" ]; then
                   s/{app_mount_uri}/$APP_MOUNT_URI/g
                   s/{host}/$APP_HOST/g" $HD/Deploy_Saleor/resources/saleor-dashboard/server_block > /etc/nginx/conf.d/saleor-dashboard
         wait
-        sudo chown -R www-data /usr/share/nginx/$APP_HOST
+        sudo chown -R nginx /usr/share/nginx/$APP_HOST
 else
         # Move static files for the Dashboard
         sudo mv $HD/saleor-dashboard/build/$APP_MOUNT_URI /usr/share/nginx/$HOST/
