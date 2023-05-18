@@ -34,8 +34,21 @@ OS="Ubuntu"
 # Generate a secret key file
 #########################################################################################
 # Create randomized 2049 byte key file
-SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1)
-export RSA_PRIVATE_KEY=$(cat my-private-key.pem)
+if [ ! -d "/etc/saleor" ]; then
+        sudo mkdir /etc/saleor
+else
+        # Does the key file exist?
+        if [ -f "/etc/saleor/api_sk" ]; then
+                # Yes, remove it.
+                sudo rm /etc/saleor/api_sk
+        fi
+        if [ -f "/etc/saleor/rsa" ]; then
+                # Yes, remove it.
+                sudo rm /etc/saleor/rsa
+        fi
+fi
+sudo echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1) > /etc/saleor/api_sk
+sudo echo $(cat my-private-key.pem) > /etc/saleor/rsa
 #########################################################################################
 
 #########################################################################################
@@ -392,7 +405,6 @@ sudo sed "s|{dburl}|$DB_URL|
           s|{static}|$STATIC_URL|g
           s|{media}|$MEDIA_URL|g
           s/{adminemail}/$ADMIN_EMAIL/
-          s|{secret}|$SECRET_KEY|
           s/{gqlorigins}/$QL_ORIGINS/" $HD/Deploy_Saleor/resources/saleor/template.env > $HD/saleor/.env
 wait
 #########################################################################################

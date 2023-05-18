@@ -193,8 +193,15 @@ TEMPLATES = [
     }
 ]
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = os.environ.get("SECRET_KEY")
+with open('/etc/saleor/api_sk') as f:
+    SECRET_KEY = f.read().strip()
+
+if not SECRET_KEY and DEBUG:
+    warnings.warn("SECRET_KEY not configured, using a random temporary key.")
+    SECRET_KEY = get_random_secret_key()
+
+with open('/etc/saleor/rsa') as f:
+    RSA_PRIVATE_KEY = f.read().strip()
 
 # Additional password algorithms that can be used by Saleor.
 # The first algorithm defined by Django is the preferred one; users not using the
@@ -204,12 +211,7 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.BCryptPasswordHasher",
 ]
 
-if not SECRET_KEY and DEBUG:
-    warnings.warn("SECRET_KEY not configured, using a random temporary key.")
-    SECRET_KEY = get_random_secret_key()
-
-RSA_PRIVATE_KEY = os.environ.get("RSA_PRIVATE_KEY", None)
-RSA_PRIVATE_PASSWORD = os.environ.get("RSA_PRIVATE_PASSWORD", None)
+RSA_PRIVATE_PASSWORD = None
 JWT_MANAGER_PATH = os.environ.get(
     "JWT_MANAGER_PATH", "saleor.core.jwt_manager.JWTManager"
 )

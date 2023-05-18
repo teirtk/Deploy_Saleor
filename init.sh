@@ -14,7 +14,7 @@ sudo apt-get install -y python3-distutils
 curl -O https://bootstrap.pypa.io/get-pip.py
 sudo python3 get-pip.py
 
-sudo apt-get install -y python3.9-dev python3-pip python3-cffi python3.9-venv gcc libpq-dev
+sudo apt-get install -y python3.9-dev python3-pip python3-cffi python3.9-venv gcc libpq-dev libpcre3 libpcre3-dev
 sudo apt-get install -y build-essential
 sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
 sudo apt-get install -y nginx nodejs postgresql postgresql-contrib
