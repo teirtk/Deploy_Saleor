@@ -19,4 +19,4 @@ sudo apt-get install -y build-essential
 sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
 sudo apt-get install -y nginx nodejs postgresql postgresql-contrib
 sudo apt-get update && sudo apt-get dist-upgrade -y
-openssl genrsa -out my-private-key.pem 3072
+sudo openssl genrsa -out /etc/saleor/rsa 3072
