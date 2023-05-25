@@ -83,8 +83,8 @@ sleep 2
 # Create the role in the database and assign the generated password
 sudo -i -u postgres psql -c "CREATE ROLE $PGSQLUSER PASSWORD '$PGSQLUSERPASS' SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;"
 # Create the database for Saleor
+
 sudo -i -u postgres psql -c "CREATE DATABASE $PGSQLDBNAME;"
-sudo -i -u postgres psql -c "CREATE EXTENSION pgcrypto;"
 # TODO - Secure the postgers user account
 sudo -i -u postgres psql -c "CREATE USER $PGSQLUSER_READ WITH PASSWORD '$PGSQLUSERPASS';"
 sudo -i -u postgres psql -c "GRANT CONNECT ON DATABASE $PGSQLDBNAME TO $PGSQLUSER_READ;"
@@ -280,6 +280,7 @@ else
                 sudo rm $HD/run/saleor.sock
         fi
 fi
+rm saleor/account/migrations/0068_user_uuid.py
 #########################################################################################
 
 
