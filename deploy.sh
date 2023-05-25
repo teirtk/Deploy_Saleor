@@ -84,12 +84,14 @@ sleep 2
 sudo -i -u postgres psql -c "CREATE ROLE $PGSQLUSER PASSWORD '$PGSQLUSERPASS' SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;"
 # Create the database for Saleor
 sudo -i -u postgres psql -c "CREATE DATABASE $PGSQLDBNAME;"
+sudo -i -u postgres psql -c "CREATE EXTENSION pgcrypto;"
 # TODO - Secure the postgers user account
 sudo -i -u postgres psql -c "CREATE USER $PGSQLUSER_READ WITH PASSWORD '$PGSQLUSERPASS';"
 sudo -i -u postgres psql -c "GRANT CONNECT ON DATABASE $PGSQLDBNAME TO $PGSQLUSER_READ;"
 sudo -i -u postgres psql -c "GRANT USAGE ON SCHEMA public TO $PGSQLUSER_READ;"
 sudo -i -u postgres psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO $PGSQLUSER_READ;"
 sudo -i -u postgres psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO $PGSQLUSER_READ;"
+
 #########################################################################################
 
 
@@ -181,10 +183,10 @@ fi
 #
 if [ "$vOPT" = "true" ]; then
         if [ "$VERSION" = "" ]; then
-                VERSION="3.13.12"
+                VERSION="3.13.16"
         fi
 else
-        VERSION="3.13.12"
+        VERSION="3.13.16"
 fi
 #
 if [ "$STATIC_URL" = "" ]; then
@@ -218,7 +220,7 @@ fi
 # Does an old virtual environment for Saleor exist?
 if [ ! -d "$HD/env/saleor" ]; then
         # Create a new virtual environment for Saleor
-        sudo -u $UN python3 -m venv $HD/env/saleor
+        sudo -u $UN python3.9 -m venv $HD/env/saleor
         wait
 fi
 #########################################################################################
@@ -435,7 +437,7 @@ source $HD/env/saleor/bin/activate
 npm install npm@latest
 wait
 # Make sure pip is upgraded
-python3 -m pip install --upgrade pip
+curl -sL https://bootstrap.pypa.io/get-pip.py | python3 -
 wait
 # Install Django
 pip3 install Django
