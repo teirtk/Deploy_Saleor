@@ -280,7 +280,6 @@ else
                 sudo rm $HD/run/saleor.sock
         fi
 fi
-rm saleor/account/migrations/0068_user_uuid.py
 #########################################################################################
 
 
