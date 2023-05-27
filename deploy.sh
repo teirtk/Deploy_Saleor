@@ -8,7 +8,8 @@ set -e
 #########################################################################################
 # Get the actual user that logged in
 #########################################################################################
-UN="$(ls -l `tty` | awk '{print $3}')"
+# UN="$(ls -l `tty` | awk '{print $3}')"
+UN="kiet"
 if [[ "$UN" != "root" ]]; then
         HD="/home/$UN"
 else
@@ -45,6 +46,7 @@ else
 fi
 sudo echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1) > /etc/saleor/api_sk
 sudo openssl genrsa -out /etc/saleor/rsa 3072
+sudo chmod 644 /etc/saleor/rsa
 #########################################################################################
 
 #########################################################################################
@@ -478,16 +480,21 @@ wait
 # Build the emails
 # npm run build-emails
 # wait
-# Exit the virtual environment here? _#_
-deactivate
-# Set ownership of the app directory to $UN:nginx
+
 sudo chown -R $UN:nginx $HD/saleor
 wait
+echo $PATH
 # Run the uwsgi socket and create it for the first time
-sudo uwsgi --ini $HD/saleor/saleor/wsgi/uwsgi.ini --uid nginx --gid nginx --pidfile $HD/saleortemp.pid
+uwsgi --ini $HD/saleor/saleor/wsgi/uwsgi.ini --uid nginx --gid nginx --pidfile $HD/saleortemp.pid
 sleep 5
 # Stop the uwsgi processes
 uwsgi --stop $HD/saleortemp.pid
+# Exit the virtual environment here? _#_
+# Set ownership of the app directory to $UN:nginx
+deactivate
+
+
+
 # Move static files to /usr/share/nginx/$HOST
 echo HOST
 sudo mv $HD/saleor/static /usr/share/nginx/${HOST}${STATIC_URL}
