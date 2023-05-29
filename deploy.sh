@@ -2,7 +2,7 @@
 # deploy-saleor.sh
 # Author:       Aaron K. Nall   http://github.com/thewhiterabbit
 #########################################################################################
-#!/bin/sh
+#!/bin/bash
 set -e
 
 #########################################################################################
@@ -17,8 +17,6 @@ else
 fi
 cd $HD
 #########################################################################################
-
-
 
 #########################################################################################
 # Get the operating system
@@ -44,7 +42,7 @@ else
                 sudo rm /etc/saleor/api_sk
         fi
 fi
-sudo echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048| head -n 1) > /etc/saleor/api_sk
+sudo echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2048 | head -n 1) >/etc/saleor/api_sk
 sudo openssl genrsa -out /etc/saleor/rsa 3072
 sudo chmod 644 /etc/saleor/rsa
 #########################################################################################
@@ -52,8 +50,8 @@ sudo chmod 644 /etc/saleor/rsa
 #########################################################################################
 # Set variables for the password, obfuscation string, and user/database names
 #########################################################################################
-# Generate an 8 byte obfuscation string for the database name & username 
-OBFSTR=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8| head -n 1)
+# Generate an 8 byte obfuscation string for the database name & username
+OBFSTR=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 # Append the database name for Saleor with the obfuscation string
 PGSQLDBNAME="saleor_db_$OBFSTR"
 # Append the database username for Saleor with the obfuscation string
@@ -63,8 +61,6 @@ PGSQLUSER="saleor_dbu_$OBFSTR"
 PGSQLUSERPASS=$(cat /dev/urandom | tr -dc 'A-Za-z0-9' | fold -w 128 | head -n 1)
 PGSQLUSER_READ="saleor_$OBFSTR"
 #########################################################################################
-
-
 
 #########################################################################################
 # Tell the user what's happening
@@ -76,8 +72,6 @@ echo "Creating database..."
 echo ""
 sleep 2
 #########################################################################################
-
-
 
 #########################################################################################
 # Create a superuser for Saleor
@@ -96,17 +90,13 @@ sudo -i -u postgres psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SEL
 
 #########################################################################################
 
-
-
 #########################################################################################
 # Tell the user what's happening
 #########################################################################################
-echo "Finished creating database" 
+echo "Finished creating database"
 echo ""
 sleep 2
 #########################################################################################
-
-
 
 #########################################################################################
 # Collect input from the user to assign required installation parameters
@@ -124,21 +114,21 @@ ADMIN_PASS="vmtriet"
 # done
 # Get an optional custom Static URL
 # if [ "$STATIC_URL" = "" ]; then
-        # echo -n "Enter a custom Static Files URI (optional):"
-        # read STATIC_URL
-        # if [ "$STATIC_URL" != "" ]; then
-                # STATIC_URL="/$STATIC_URL/"
-        # fi
+# echo -n "Enter a custom Static Files URI (optional):"
+# read STATIC_URL
+# if [ "$STATIC_URL" != "" ]; then
+# STATIC_URL="/$STATIC_URL/"
+# fi
 # else
 #         STATIC_URL="/$STATIC_URL/"
 # fi
 # Get an optional custom media URL
 # if [ "$MEDIA_URL" = "" ]; then
-        # echo -n "Enter a custom Media Files URI (optional):"
-        # read MEDIA_URL
-        # if [ "$MEDIA_URL" != "" ]; then
-                # MEDIA_URL="/$MEDIA_URL/"
-        # fi
+# echo -n "Enter a custom Media Files URI (optional):"
+# read MEDIA_URL
+# if [ "$MEDIA_URL" != "" ]; then
+# MEDIA_URL="/$MEDIA_URL/"
+# fi
 # else
 #         MEDIA_URL="/$MEDIA_URL/"
 # fi
@@ -157,8 +147,6 @@ ADMIN_PASS="vmtriet"
 #         read -s ADMIN_PASS
 # done
 #########################################################################################
-
-
 
 #########################################################################################
 # Set default and optional parameters
@@ -180,27 +168,19 @@ if [[ "$API_PORT" = "" ]]; then
 fi
 #
 if [ "$APIURI" = "" ]; then
-        APIURI="graphql" 
+        APIURI="graphql"
 fi
 #
-if [ "$vOPT" = "true" ]; then
-        if [ "$VERSION" = "" ]; then
-                VERSION="3.13.16"
-        fi
-else
-        VERSION="3.13.16"
-fi
+VERSION=""
 #
 if [ "$STATIC_URL" = "" ]; then
-        STATIC_URL="/static/" 
+        STATIC_URL="/static/"
 fi
 #
 if [ "$MEDIA_URL" = "" ]; then
-        MEDIA_URL="/media/" 
+        MEDIA_URL="/media/"
 fi
 #########################################################################################
-
-
 
 #########################################################################################
 # Open the selected ports for the API and APP
@@ -210,8 +190,6 @@ sudo ufw allow $GQL_PORT
 # Open API port
 sudo ufw allow $API_PORT
 #########################################################################################
-
-
 
 #########################################################################################
 # Create virtual environment directory
@@ -227,8 +205,6 @@ if [ ! -d "$HD/env/saleor" ]; then
 fi
 #########################################################################################
 
-
-
 #########################################################################################
 # Clone the Saleor Git repository
 #########################################################################################
@@ -243,31 +219,14 @@ fi
 #
 echo "Cloning Saleor from github..."
 echo ""
-# Check if the -v (version) option was used
-if [ "$vOPT" = "true" ]; then
-        # Get the Mirumee repo
-        sudo -u $UN git clone https://github.com/saleor/saleor.git
-else
-        # Was a repo specified?
-        if [ "$REPO" = "saleor" ]; then
-                # Get the Mirumee repo
-                sudo -u $UN git clone https://github.com/saleor/saleor.git
-        else
-                # Get the Mirumee repo
-                sudo -u $UN git clone https://github.com/saleor/saleor.git
+sudo -u $UN git clone https://github.com/saleor/saleor.git
 
-                ###### For possible later use ######
-                # Get the forked repo from thewhiterabbit
-                #git clone https://github.com/saleor/saleor.git
-                ###### For possible later use ######
-        fi
-fi
 wait
 # Make sure we're in the project root directory for Saleor
 cd $HD/saleor
 wait
 # Was the -v (version) option used?
-if [ "vOPT" = "true" ] || [ "$VERSION" != "" ]; then
+if [ "$VERSION" != "" ]; then
         # Checkout the specified version
         sudo -u $UN git checkout $VERSION
         wait
@@ -284,8 +243,6 @@ else
 fi
 #########################################################################################
 
-
-
 #########################################################################################
 # Tell the user what's happening
 #########################################################################################
@@ -293,8 +250,6 @@ echo "Github cloning complete"
 echo ""
 sleep 2
 #########################################################################################
-
-
 
 #########################################################################################
 # Replace any parameter slugs in the template files with real paramaters & write them to
@@ -305,62 +260,31 @@ if [ -f "$HD/saleor/saleor/settings.py" ]; then
         sudo rm $HD/saleor/saleor/settings.py
 fi
 sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
-# # Replace the populatedb.py file with the production version
-# if [ -f "$HD/saleor/saleor/core/management/commands/populatedb.py" ]; then
-#         sudo rm $HD/saleor/saleor/core/management/commands/populatedb.py
-# fi
-# sudo cp $HD/Deploy_Saleor/resources/saleor/populatedb.py $HD/saleor/saleor/core/management/commands/populatedb.py
-# Replace the test_core.py file with the production version
-#if [ -f "$HD/saleor/saleor/core/tests/test_core.py" ]; then
-#        sudo rm $HD/saleor/saleor/core/tests/test_core.py
-#fi
-#sudo cp $HD/Deploy_Saleor/resources/saleor/test_core.py $HD/saleor/saleor/core/tests/
 wait
 # Does an old saleor.service file exist?
 if [ -f "/etc/systemd/system/saleor.service" ]; then
         # Remove the old service file
         sudo rm /etc/systemd/system/saleor.service
 fi
-###### This following section is for future use and will be modified to allow an alternative repo clone ######
-# Was the -v (version) option used or Mirumee repo specified?
-if [ "vOPT" = "true" ] || [ "$REPO" = "saleor" ]; then
-        # Create the saleor service file
-        sudo sed "s/{un}/$UN/
-                  s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service > /etc/systemd/system/saleor.service
-        wait
-        # Does an old server block exist?
-        if [ -f "/etc/nginx/conf.d/saleor" ]; then
-                # Remove the old service file
-                sudo rm /etc/nginx/conf.d/saleor
-        fi
-        # Create the saleor server block
-        sudo sed "s|{hd}|$HD|g
-                  s/{host}/$HOST/g
-                  s|{static}|$STATIC_URL|g
-                  s|{media}|$MEDIA_URL|g" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/conf.d/saleor
-        wait
-else
-        # Create the new service file
-        sudo sed "s/{un}/$UN/
-                  s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service > /etc/systemd/system/saleor.service
-        wait
-        # Does an old server block exist?
-        if [ -f "/etc/nginx/conf.d/saleor" ]; then
-                # Remove the old service file
-                sudo rm /etc/nginx/conf.d/saleor
-        fi
-        # Create the new server block
-        sudo sed "s|{hd}|$HD|g
-                  s/{api_host}/$API_HOST/
-                  s/{host}/$HOST/g
-                  s|{static}|$STATIC_URL|g
-                  s|{media}|$MEDIA_URL|g
-                  s/{api_port}/$API_PORT/" $HD/Deploy_Saleor/resources/saleor/server_block > /etc/nginx/conf.d/saleor
-        wait
+sudo rm /etc/nginx/conf.d/default.conf
+# Create the saleor service file
+sudo sed "s/{un}/$UN/
+          s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service >/etc/systemd/system/saleor.service
+wait
+# Does an old server block exist?
+if [ -f "/etc/nginx/conf.d/saleor.conf" ]; then
+        # Remove the old service file
+        sudo rm /etc/nginx/conf.d/saleor.conf
 fi
+# Create the saleor server block
+sudo sed "s|{hd}|$HD|g
+          s/{host}/$HOST/g
+          s|{static}|$STATIC_URL|g
+          s|{media}|$MEDIA_URL|g" $HD/Deploy_Saleor/resources/saleor/server_block >/etc/nginx/conf.d/saleor.conf
+wait
 # Create the production uwsgi initialization file
 sudo sed "s|{hd}|$HD|g
-          s/{un}/$UN/" $HD/Deploy_Saleor/resources/saleor/template.uwsgi > $HD/saleor/saleor/wsgi/prod.ini
+          s/{un}/$UN/" $HD/Deploy_Saleor/resources/saleor/template.uwsgi >$HD/saleor/saleor/wsgi/prod.ini
 if [ -d "/usr/share/nginx/$HOST" ]; then
         sudo rm -R /usr/share/nginx/$HOST
         wait
@@ -370,19 +294,9 @@ sudo mkdir /usr/share/nginx/$HOST
 wait
 # Create the media directory
 sudo mkdir /usr/share/nginx/$HOST$MEDIA_URL
-# Static directory will be moved into /usr/share/nginx/$HOST/ after collectstatic is performed
-#########################################################################################
-
-
-
-#########################################################################################
 # Tell the user what's happening
 echo "Creating production deployment packages for Saleor API & GraphQL..."
 echo ""
-#########################################################################################
-
-
-
 #########################################################################################
 # Setup the environment variables for Saleor API
 #########################################################################################
@@ -390,7 +304,7 @@ echo ""
 DB_URL="postgres://$PGSQLUSER:$PGSQLUSERPASS@$PGDBHOST:$DBPORT/$PGSQLDBNAME"
 DB_REPL="postgres://$PGSQLUSER_READ:$PGSQLUSERPASS@$PGDBHOST:$DBPORT/$PGSQLDBNAME"
 EMAIL_URL="smtp://$EMAIL:$EMAIL_PW@$EMAIL_HOST:/?ssl=True"
-API_HOST=$(hostname -i);
+API_HOST=$(hostname -i)
 # Build the chosts and ahosts lists
 C_HOSTS="$HOST,$API_HOST,localhost,127.0.0.1"
 A_HOSTS="$HOST,$API_HOST,localhost,127.0.0.1"
@@ -405,19 +319,15 @@ sudo sed "s|{dburl}|$DB_URL|
           s|{static}|$STATIC_URL|g
           s|{media}|$MEDIA_URL|g
           s/{adminemail}/$ADMIN_EMAIL/
-          s/{gqlorigins}/$QL_ORIGINS/" $HD/Deploy_Saleor/resources/saleor/template.env > $HD/saleor/.env
+          s/{gqlorigins}/$QL_ORIGINS/" $HD/Deploy_Saleor/resources/saleor/template.env >$HD/saleor/.env
 wait
 #########################################################################################
-
-
 
 #########################################################################################
 # Copy the uwsgi_params file to /saleor/uwsgi_params
 #########################################################################################
 sudo cp $HD/Deploy_Saleor/resources/saleor/uwsgi_params $HD/saleor/uwsgi_params
 #########################################################################################
-
-
 
 #########################################################################################
 # Install Saleor for production
@@ -483,17 +393,14 @@ wait
 
 sudo chown -R $UN:nginx $HD/saleor
 wait
-echo $PATH
 # Run the uwsgi socket and create it for the first time
-uwsgi --ini $HD/saleor/saleor/wsgi/uwsgi.ini --uid nginx --gid nginx --pidfile $HD/saleortemp.pid
-sleep 5
+# uwsgi --ini $HD/saleor/saleor/wsgi/uwsgi.ini --uid $UN --gid nginx --enable-threads --pidfile $HD/saleortemp.pid
+# sleep 5
 # Stop the uwsgi processes
-uwsgi --stop $HD/saleortemp.pid
+# uwsgi --stop $HD/saleortemp.pid
 # Exit the virtual environment here? _#_
 # Set ownership of the app directory to $UN:nginx
 deactivate
-
-
 
 # Move static files to /usr/share/nginx/$HOST
 echo HOST
@@ -501,8 +408,8 @@ sudo mv $HD/saleor/static /usr/share/nginx/${HOST}${STATIC_URL}
 sudo chown -R nginx:nginx /usr/share/nginx/$HOST
 #sudo chmod -R 776 /usr/share/nginx/$HOST
 #########################################################################################
-
-
+sudo chown -R $UN:nginx $HD
+sudo chmod -R 775 $HD
 
 #########################################################################################
 # Tell the user what's happening
@@ -512,14 +419,11 @@ echo "Finished creating production deployment packages for Saleor API & GraphQL"
 echo ""
 #########################################################################################
 
-
-
 #########################################################################################
 # Call the dashboard deployment script - Disabled until debugged
 #########################################################################################
-source $HD/Deploy_Saleor/deploy-dashboard.sh
+# source $HD/Deploy_Saleor/deploy-dashboard.sh
 #########################################################################################
-
 
 #########################################################################################
 # Enable the Saleor service
@@ -532,8 +436,6 @@ sudo systemctl daemon-reload
 sudo systemctl start saleor.service
 #########################################################################################
 
-
-
 #########################################################################################
 # Tell the user what's happening
 echo "Creating undeploy.sh for undeployment scenario..."
@@ -542,19 +444,17 @@ if [ "$SAME_HOST" = "no" ]; then
         sed "s|{rm_app_host}|sudo rm -R /usr/share/nginx/$APP_HOST|g
              s|{host}|$HOST|
              s|{gql_port}|$GQL_PORT|
-             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy > $HD/Deploy_Saleor/undeploy.sh
+             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
         wait
 else
         BLANK=""
         sed "s|{rm_app_host}|$BLANK|g
              s|{host}|$HOST|
              s|{gql_port}|$GQL_PORT|
-             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy > $HD/Deploy_Saleor/undeploy.sh
+             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
         wait
 fi
 #########################################################################################
-
-
 
 #########################################################################################
 # Tell the user what's happening

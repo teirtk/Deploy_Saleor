@@ -22,11 +22,8 @@ server {
     }
 
     # Send all non-media requests to the Django server.
-    location /graphql/ {
+    location / {
         uwsgi_pass  django;
         include     {hd}/saleor/uwsgi_params;
     }
-
-    {dl}
-
 }

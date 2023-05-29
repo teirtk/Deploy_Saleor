@@ -1,3 +1,4 @@
+#!/bin/bash
 echo -e "deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ jammy nginx\ndeb-src http://nginx.org/packages/mainline/ubuntu/ jammy nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
 wget --quiet -O - http://nginx.org/keys/nginx_signing.key | sudo apt-key add -
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
