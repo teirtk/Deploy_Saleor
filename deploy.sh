@@ -220,7 +220,6 @@ fi
 echo "Cloning Saleor from github..."
 echo ""
 sudo -u $UN git clone https://github.com/saleor/saleor.git
-
 wait
 # Make sure we're in the project root directory for Saleor
 cd $HD/saleor
@@ -234,13 +233,13 @@ fi
 #sudo -u $UN cp $HD/django/saleor/asgi.py $HD/saleor/saleor/
 #sudo -u $UN cp $HD/django/saleor/wsgi.py $HD/saleor/saleor/
 #sudo -u $UN cp $HD/saleor/saleor/wsgi/__init__.py $HD/saleor/saleor/wsgi.py
-if [ ! -d "$HD/run" ]; then
-        sudo -u $UN mkdir $HD/run
-else
-        if [ -f "$HD/run/saleor.sock" ]; then
-                sudo rm $HD/run/saleor.sock
-        fi
-fi
+# if [ ! -d "$HD/run" ]; then
+#         sudo -u $UN mkdir $HD/run
+# else
+#         if [ -f "$HD/run/saleor.sock" ]; then
+#                 sudo rm $HD/run/saleor.sock
+#         fi
+# fi
 #########################################################################################
 
 #########################################################################################
@@ -256,44 +255,11 @@ sleep 2
 # the production files
 #########################################################################################
 # Replace the settings.py with the production version
-if [ -f "$HD/saleor/saleor/settings.py" ]; then
-        sudo rm $HD/saleor/saleor/settings.py
-fi
-sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
-wait
-# Does an old saleor.service file exist?
-if [ -f "/etc/systemd/system/saleor.service" ]; then
-        # Remove the old service file
-        sudo rm /etc/systemd/system/saleor.service
-fi
-sudo rm /etc/nginx/conf.d/default.conf
-# Create the saleor service file
-sudo sed "s/{un}/$UN/
-          s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service >/etc/systemd/system/saleor.service
-wait
-# Does an old server block exist?
-if [ -f "/etc/nginx/conf.d/saleor.conf" ]; then
-        # Remove the old service file
-        sudo rm /etc/nginx/conf.d/saleor.conf
-fi
-# Create the saleor server block
-sudo sed "s|{hd}|$HD|g
-          s/{host}/$HOST/g
-          s|{static}|$STATIC_URL|g
-          s|{media}|$MEDIA_URL|g" $HD/Deploy_Saleor/resources/saleor/server_block >/etc/nginx/conf.d/saleor.conf
-wait
-# Create the production uwsgi initialization file
-sudo sed "s|{hd}|$HD|g
-          s/{un}/$UN/" $HD/Deploy_Saleor/resources/saleor/template.uwsgi >$HD/saleor/saleor/wsgi/prod.ini
-if [ -d "/usr/share/nginx/$HOST" ]; then
-        sudo rm -R /usr/share/nginx/$HOST
-        wait
-fi
-# Create the host directory in /usr/share/nginx/
-sudo mkdir /usr/share/nginx/$HOST
-wait
-# Create the media directory
-sudo mkdir /usr/share/nginx/$HOST$MEDIA_URL
+# if [ -f "$HD/saleor/saleor/settings.py" ]; then
+#         sudo rm $HD/saleor/saleor/settings.py
+# fi
+# sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
+# wait
 # Tell the user what's happening
 echo "Creating production deployment packages for Saleor API & GraphQL..."
 echo ""
@@ -326,23 +292,11 @@ wait
 #########################################################################################
 # Copy the uwsgi_params file to /saleor/uwsgi_params
 #########################################################################################
-sudo cp $HD/Deploy_Saleor/resources/saleor/uwsgi_params $HD/saleor/uwsgi_params
 #########################################################################################
 
 #########################################################################################
 # Install Saleor for production
 #########################################################################################
-# Does an old virtual environment vassals for Saleor exist?
-if [ -d "$HD/env/saleor/vassals" ]; then
-        sudo rm -R $HD/env/saleor/vassals
-        wait
-fi
-# Create vassals directory in virtual environment
-sudo -u $UN mkdir $HD/env/saleor/vassals
-wait
-# Simlink to the prod.ini
-sudo ln -s $HD/saleor/saleor/wsgi/prod.ini $HD/env/saleor/vassals
-wait
 # Activate the virtual environment
 source $HD/env/saleor/bin/activate
 # Update npm
@@ -351,22 +305,8 @@ wait
 # Make sure pip is upgraded
 curl -sL https://bootstrap.pypa.io/get-pip.py | python3 -
 wait
-# Install Django
-pip3 install Django
-wait
-# Create a Temporary directory to generate some files we need
-#sudo -u $UN mkdir $HD/django
-#cd django
-# Create the project folder
-#sudo -u $UN django-admin.py startproject saleor
-# Install uwsgi
-pip3 install uwsgi
-wait
 # Install the project requirements
 pip3 install -r requirements.txt
-wait
-# Install the decoupler for .env file
-pip3 install python-decouple
 wait
 # Set any secret Environment Variables
 export ADMIN_PASS="$ADMIN_PASS"
@@ -384,32 +324,14 @@ wait
 # Collect the static elemants
 python3 manage.py collectstatic
 wait
-# Build the schema
-npm run build-schema
-wait
-# Build the emails
-# npm run build-emails
-# wait
 
 sudo chown -R $UN:nginx $HD/saleor
 wait
-# Run the uwsgi socket and create it for the first time
-# uwsgi --ini $HD/saleor/saleor/wsgi/uwsgi.ini --uid $UN --gid nginx --enable-threads --pidfile $HD/saleortemp.pid
-# sleep 5
-# Stop the uwsgi processes
-# uwsgi --stop $HD/saleortemp.pid
-# Exit the virtual environment here? _#_
-# Set ownership of the app directory to $UN:nginx
 deactivate
-
-# Move static files to /usr/share/nginx/$HOST
-echo HOST
-sudo mv $HD/saleor/static /usr/share/nginx/${HOST}${STATIC_URL}
-sudo chown -R nginx:nginx /usr/share/nginx/$HOST
-#sudo chmod -R 776 /usr/share/nginx/$HOST
 #########################################################################################
-sudo chown -R $UN:nginx $HD
-sudo chmod -R 775 $HD
+sudo usermod -a -G nginx $UN
+# sudo chown -R $UN:nginx $HD
+# sudo chmod -R 775 $HD
 
 #########################################################################################
 # Tell the user what's happening
@@ -422,7 +344,7 @@ echo ""
 #########################################################################################
 # Call the dashboard deployment script - Disabled until debugged
 #########################################################################################
-# source $HD/Deploy_Saleor/deploy-dashboard.sh
+source $HD/Deploy_Saleor/deploy-dashboard.sh
 #########################################################################################
 
 #########################################################################################
@@ -440,20 +362,20 @@ sudo systemctl start saleor.service
 # Tell the user what's happening
 echo "Creating undeploy.sh for undeployment scenario..."
 #########################################################################################
-if [ "$SAME_HOST" = "no" ]; then
-        sed "s|{rm_app_host}|sudo rm -R /usr/share/nginx/$APP_HOST|g
-             s|{host}|$HOST|
-             s|{gql_port}|$GQL_PORT|
-             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
-        wait
-else
-        BLANK=""
-        sed "s|{rm_app_host}|$BLANK|g
-             s|{host}|$HOST|
-             s|{gql_port}|$GQL_PORT|
-             s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
-        wait
-fi
+# if [ "$SAME_HOST" = "no" ]; then
+#         sed "s|{rm_app_host}|sudo rm -R /usr/share/nginx/$APP_HOST|g
+#              s|{host}|$HOST|
+#              s|{gql_port}|$GQL_PORT|
+#              s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
+#         wait
+# else
+#         BLANK=""
+#         sed "s|{rm_app_host}|$BLANK|g
+#              s|{host}|$HOST|
+#              s|{gql_port}|$GQL_PORT|
+#              s|{api_port}|$API_PORT|" $HD/Deploy_Saleor/template.undeploy >$HD/Deploy_Saleor/undeploy.sh
+#         wait
+# fi
 #########################################################################################
 
 #########################################################################################

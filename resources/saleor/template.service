@@ -1,9 +1,19 @@
 [Unit]
-Description=uWSGI for Saleor API
+Description=gunicorn daemon
 After=network.target
+
 [Service]
+Type=notify
 User={un}
-Restart=always
-ExecStart={hd}/env/saleor/bin/uwsgi --master --emperor {hd}/env/saleor/vassals/prod.ini --uid {un} --gid nginx
+Group=nginx
+Environment={hd}/env/saleor/bin
+WorkingDirectory={hd}/saleor
+ExecStart={hd}/env/saleor/bin/gunicorn --access-logfile /var/log/gunicorn/access.log --error-logfile /var/log/gunicorn/error.log --bind :8000 --workers 4 --worker-class saleor.asgi.gunicorn_worker.UvicornWorker saleor.asgi:application
+
+ExecReload=/usr/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
 [Install]
 WantedBy=multi-user.target

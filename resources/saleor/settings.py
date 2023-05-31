@@ -129,30 +129,25 @@ if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
         f":{SENDGRID_PASSWORD}@smtp.sendgrid.net:587/?tls=True"
     )
 
-email_config = dj_email_url.parse(
-    EMAIL_URL or "console://demo@example.com:console@example/"
-)
+email_config = dj_email_url.parse(EMAIL_URL or "")
 
-EMAIL_FILE_PATH: str = email_config["EMAIL_FILE_PATH"]
-EMAIL_HOST_USER: str = email_config["EMAIL_HOST_USER"]
-EMAIL_HOST_PASSWORD: str = email_config["EMAIL_HOST_PASSWORD"]
-EMAIL_HOST: str = email_config["EMAIL_HOST"]
-EMAIL_PORT: int = email_config["EMAIL_PORT"]
-EMAIL_BACKEND: str = email_config["EMAIL_BACKEND"]
-EMAIL_USE_TLS: bool = email_config["EMAIL_USE_TLS"]
-EMAIL_USE_SSL: bool = email_config["EMAIL_USE_SSL"]
-
-# If enabled, make sure you have set proper storefront address in ALLOWED_CLIENT_HOSTS.
-ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL = get_bool_from_env(
-    "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", True
-)
+EMAIL_FILE_PATH: str = email_config.get("EMAIL_FILE_PATH", "")
+EMAIL_HOST_USER: str = email_config.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD: str = email_config.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST: str = email_config.get("EMAIL_HOST", "")
+EMAIL_PORT: str = str(email_config.get("EMAIL_PORT", ""))
+EMAIL_BACKEND: str = email_config.get("EMAIL_BACKEND", "")
+EMAIL_USE_TLS: bool = email_config.get("EMAIL_USE_TLS", False)
+EMAIL_USE_SSL: bool = email_config.get("EMAIL_USE_SSL", False)
 
 ENABLE_SSL = get_bool_from_env("ENABLE_SSL", False)
 
 if ENABLE_SSL:
     SECURE_SSL_REDIRECT = not DEBUG
 
-DEFAULT_FROM_EMAIL: str = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+DEFAULT_FROM_EMAIL: str = os.environ.get(
+    "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@example.com"
+)
 
 MEDIA_ROOT: str = os.path.join(PROJECT_ROOT, "media")
 MEDIA_URL: str = os.environ.get("MEDIA_URL", "/media/")
@@ -193,15 +188,8 @@ TEMPLATES = [
     }
 ]
 
-with open('/etc/saleor/api_sk') as f:
-    SECRET_KEY = f.read().strip()
-
-if not SECRET_KEY and DEBUG:
-    warnings.warn("SECRET_KEY not configured, using a random temporary key.")
-    SECRET_KEY = get_random_secret_key()
-
-with open('/etc/saleor/rsa') as f:
-    RSA_PRIVATE_KEY = f.read().strip()
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # Additional password algorithms that can be used by Saleor.
 # The first algorithm defined by Django is the preferred one; users not using the
@@ -211,7 +199,12 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.BCryptPasswordHasher",
 ]
 
-RSA_PRIVATE_PASSWORD = None
+if not SECRET_KEY and DEBUG:
+    warnings.warn("SECRET_KEY not configured, using a random temporary key.")
+    SECRET_KEY = get_random_secret_key()
+
+RSA_PRIVATE_KEY = os.environ.get("RSA_PRIVATE_KEY", None)
+RSA_PRIVATE_PASSWORD = os.environ.get("RSA_PRIVATE_PASSWORD", None)
 JWT_MANAGER_PATH = os.environ.get(
     "JWT_MANAGER_PATH", "saleor.core.jwt_manager.JWTManager"
 )
@@ -607,8 +600,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "saleor.csv.tasks.delete_old_export_files",
         "schedule": crontab(hour=1, minute=0),
     },
-    "send-sale-toggle-notifications": {
-        "task": "saleor.discount.tasks.send_sale_toggle_notifications",
+    "handle-sale-toggle": {
+        "task": "saleor.discount.tasks.handle_sale_toggle",
         "schedule": initiated_sale_webhook_schedule,
     },
     "update-products-search-vectors": {
