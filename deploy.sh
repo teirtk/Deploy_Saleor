@@ -2,7 +2,7 @@
 # deploy-saleor.sh
 # Author:       Aaron K. Nall   http://github.com/thewhiterabbit
 #########################################################################################
-#!/bin/bash
+#!/bin/sh
 set -e
 
 #########################################################################################
@@ -258,9 +258,11 @@ sleep 2
 # if [ -f "$HD/saleor/saleor/settings.py" ]; then
 #         sudo rm $HD/saleor/saleor/settings.py
 # fi
-# sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
-# wait
-# Tell the user what's happening
+sudo cp $HD/Deploy_Saleor/resources/saleor/settings.py $HD/saleor/saleor/settings.py
+wait
+sudo sed "s/{un}/$UN/
+          s|{hd}|$HD|g" $HD/Deploy_Saleor/resources/saleor/template.service >/etc/systemd/system/saleor.service
+wait
 echo "Creating production deployment packages for Saleor API & GraphQL..."
 echo ""
 #########################################################################################
@@ -282,8 +284,6 @@ sudo sed "s|{dburl}|$DB_URL|
           s/{chosts}/$C_HOSTS/
           s/{ahosts}/$A_HOSTS/
           s/{host}/$HOST/g
-          s|{static}|$STATIC_URL|g
-          s|{media}|$MEDIA_URL|g
           s/{adminemail}/$ADMIN_EMAIL/
           s/{gqlorigins}/$QL_ORIGINS/" $HD/Deploy_Saleor/resources/saleor/template.env >$HD/saleor/.env
 wait
@@ -300,12 +300,11 @@ wait
 # Activate the virtual environment
 source $HD/env/saleor/bin/activate
 # Update npm
-npm install npm@latest
-wait
 # Make sure pip is upgraded
 curl -sL https://bootstrap.pypa.io/get-pip.py | python3 -
 wait
 # Install the project requirements
+pip3 install python-decouple
 pip3 install -r requirements.txt
 wait
 # Set any secret Environment Variables
